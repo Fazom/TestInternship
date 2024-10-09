@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3  # 3 пода дл€ стабильной нагрузки
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: my-app-image:latest  # ќбраз приложени€
+        resources:
+          requests:
+            cpu: "0.2"  # «апрос ресурсов на момент старта (учитыва€ большую нагрузку на старте)
+            memory: "128Mi"  # ѕосто€нное использование 128M пам€ти
+          limits:
+            cpu: "0.5"  # Ћимит ресурсов в начале (учитыва€ высокую начальную нагрузку)
+        readinessProbe:
+          httpGet:
+            path: /health  # ѕуть проверки готовности приложени€
+            port: 8080
+          initialDelaySeconds: 10  # ¬рем€ на инициализацию (5-10 секунд)
+          periodSeconds: 5
+      affinity:
+        podAntiAffinity:  # ќбеспечение отказоустойчивости
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - my-app
+            topologyKey: "kubernetes.io/hostname"  # –азмещение подов на разных нодах
